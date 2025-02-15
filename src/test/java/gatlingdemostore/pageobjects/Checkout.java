@@ -1,6 +1,6 @@
 package gatlingdemostore.pageobjects;
 
-import gatlingdemostore.DemostoreSimulation;
+
 import io.gatling.javaapi.core.ChainBuilder;
 
 import static io.gatling.javaapi.core.CoreDsl.*;

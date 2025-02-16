@@ -57,7 +57,7 @@ public class DemostoreSimulation extends Simulation {
 
 
   //Created ChainBuilder-class named "initSession" with session variables and cookie
-  private static final ChainBuilder initSession =
+  public static final ChainBuilder initSession =
           //Delete cookie before script started
           exec(flushCookieJar())
                   //Set session local variables with appropriate values below
@@ -68,7 +68,7 @@ public class DemostoreSimulation extends Simulation {
 
 
 
-  //Created ScenarioBuilder-class named "scenario" with basical scenario user action in different classes - CmsPage, Catalog, Checkout
+  //***Created ScenarioBuilder-class named "scenario" with basical scenario user action in different classes - CmsPage, Catalog, Checkout - Use with regular simulation only!!!
   private static final ScenarioBuilder scn = scenario("DemostoreSimulation")
     .exec(initSession)
     .exec(CmsPage.homepage)
@@ -150,7 +150,7 @@ public class DemostoreSimulation extends Simulation {
                                             Choice.withWeight(15.0, exec(UserJourneys.abandonCart)),
                                             Choice.withWeight(10.0, exec(UserJourneys.completePurchase))));
 
-    //Created scenario defaultPurchase for default load testing - 75, 15, 10 percents of 60 seconds robots will execute different actions from UserJourneys
+    //Created scenario defaultPurchase for default load testing - 25, 25, 50 percents of 60 seconds robots will execute different actions from UserJourneys
     private static final ScenarioBuilder highPurchase =
             scenario("High Purchase Load Test")
                     .during(Duration.ofSeconds(60))
@@ -164,75 +164,100 @@ public class DemostoreSimulation extends Simulation {
 
 
 
+  //Created several setUp-methods with different types of user-test-executions with appropriate scenarios
+
+    //***Basic simulation for script-debugging - executes ScenarioBuilder-class named "scenario" with Open model of simulation - injects only one user in the system, using http-protocol
+    {
+      setUp(scn.injectOpen(atOnceUsers(1))).protocols(HTTP_PROTOCOL);
+    }
 
 
-
-  {
-	  // debug //setUp(scn.injectOpen(atOnceUsers(1))).protocols(HTTP_PROTOCOL);
-
-
-
-
-    //Regular Simulation
+    //***Regular Simulation -  executes ScenarioBuilder-class named "scenario" with Open model using http-protocol
+    //{
       //setUp(
               //scn.injectOpen(
+                      //Inject 3 users at start one time
                       //atOnceUsers(3),
+                      //Get pause for 5 seconds
                       //nothingFor(Duration.ofSeconds(5)),
+                      //Sequentially inject up to 10 users and hold them on 20 seconds then decrease sequentially
                       //rampUsers(10).during(Duration.ofSeconds(20)),
+                      //Get pause for 10 seconds
                       //nothingFor(Duration.ofSeconds(10)),
+                      //Inject 1 user per second sequentially, hold them during 20 seconds then decrease count of users sequentially
                       //constantUsersPerSec(1).during(Duration.ofSeconds(20))))
+
               //.protocols(HTTP_PROTOCOL);
+    //}
 
 
+    //***Closed model simulation - executes ScenarioBuilder-class named "scenario" with Closed model using http-protocol
+    //{
+      //setUp(
+              //scn.injectClosed(
+                      //Inject and hold 5 users (concurrent with another 5 users) in the system during 20 seconds
+                      //constantConcurrentUsers(5).during(Duration.ofSeconds(20)),
+                      //Inject 1 user in the system and increase it to 5 users during 20 seconds
+                      //rampConcurrentUsers(1).to(5).during(Duration.ofSeconds(20))
+              //)
+      //)
+              //.protocols(HTTP_PROTOCOL);
+    //}
 
 
-    //closed simulation
+    //***Throttle simulation - executes ScenarioBuilder-class named "scenario" with Open model using http-protocol with 1 user per second during 3 minutes and throttling
+    //{
+      //setUp(
+              //Inject 1 user per second sequentially, hold them during 3 minutes then decrease count of users sequentially
+              //scn.injectOpen(constantUsersPerSec(1).during(Duration.ofMinutes(3)))
+                      //.protocols(HTTP_PROTOCOL)
+
+                      //.throttle(
+                              //Reach 10 requests per seconds in 30 second interval
+                              //reachRps(10).in(Duration.ofSeconds(30)),
+                              //Hold this situation for 60 seconds
+                              //holdFor(Duration.ofSeconds(60)),
+                              //Jump to 20 requests per second immediately
+                              //jumpToRps(20),
+                              //Hold this situation for 60 seconds
+                              //holdFor(Duration.ofSeconds(60))))
+              //Maximal duration of test simulation is 3 minutes
+              //.maxDuration(Duration.ofMinutes(3));
+    //}
+
+
+    //***Simulation with Scenarios class and system parameters by default - execute Open model load test with defaultPurchase scenario actions
+    //{
+      //setUp(
+              //Scenarios.defaultPurchase
+                      //Injects USER_COUNT of users in the system sequentially, hold them during RAMP_DURATION seconds using http-protocol
+                      //.injectOpen(rampUsers(USER_COUNT).during(RAMP_DURATION))
+                      //.protocols(HTTP_PROTOCOL));
+    //}
+
+
+    //***Sequential executing of scenarios-class - first is defaultPurchase, second - highPurchase after it
+    //{
+      //setUp(
+              //Execute Scenarios.defaultPurchase first
+              //Scenarios.defaultPurchase
+                      //Inject USER_COUNT users sequentially and hold them on RAMP_DURATION seconds using http-protocol
+                      //.injectOpen(rampUsers(USER_COUNT).during(RAMP_DURATION)).protocols(HTTP_PROTOCOL)
+                      //Then execute Scenarios.highPurchase
+                      //.andThen(
+                              //Scenarios.highPurchase
+                              //Inject users sequentially to 5, hold 5 users of 10 seconds using http-protocol
+                              //.injectOpen(rampUsers(5).during(Duration.ofSeconds(10))).protocols(HTTP_PROTOCOL)));
+    //}
+
+
+  //Parallel executing scenarios-class - defaultPurchase and highPurchase at the same time using http-protocol
+  //{
     //setUp(
-            //scn.injectClosed(
-                    //constantConcurrentUsers(5).during(Duration.ofSeconds(20)),
-                    //rampConcurrentUsers(1).to(5).during(Duration.ofSeconds(20))
-                    //)
-    //)
-            //.protocols(HTTP_PROTOCOL);
-
-
-
-    //Throttle simulation
-    //setUp(
-            //scn.injectOpen(constantUsersPerSec(1).during(Duration.ofMinutes(3)))
-                    //.protocols(HTTP_PROTOCOL)
-                    //.throttle(
-                            //reachRps(10).in(Duration.ofSeconds(30)),
-                            //holdFor(Duration.ofSeconds(60)),
-                            //jumpToRps(20),
-                            //holdFor(Duration.ofSeconds(60))))
-
-            //.maxDuration(Duration.ofMinutes(3));
-
-
-
-    //With Scenarios class and system parameters by default
-    //setUp(
-            //Scenarios.defaultPurchase
-                    //.injectOpen(rampUsers(USER_COUNT).during(RAMP_DURATION))
-                    //.protocols(HTTP_PROTOCOL));
-
-
-    //Sequence of scenarios
-    //setUp(
-            //Scenarios.defaultPurchase
-                    //.injectOpen(rampUsers(USER_COUNT).during(RAMP_DURATION)).protocols(HTTP_PROTOCOL)
-                    //.andThen(
-                            //Scenarios.highPurchase
-                                    //.injectOpen(rampUsers(5).during(Duration.ofSeconds(10))).protocols(HTTP_PROTOCOL)));
-
-
-
-    //Parallel scenarios
-  setUp(
-          Scenarios.defaultPurchase.injectOpen(rampUsers(USER_COUNT).during(RAMP_DURATION)),
-          Scenarios.highPurchase.injectOpen(rampUsers(2).during(Duration.ofSeconds(10))))
-          .protocols(HTTP_PROTOCOL);
-
-  }
+          //Inject USER_COUNT users sequentially during RAMP_DURATION seconds period
+          //Scenarios.defaultPurchase.injectOpen(rampUsers(USER_COUNT).during(RAMP_DURATION)),
+          //Inject 2 users during 10 seconds period sequentially
+          //Scenarios.highPurchase.injectOpen(rampUsers(2).during(Duration.ofSeconds(10))))
+          //.protocols(HTTP_PROTOCOL);
+  //}
 }
